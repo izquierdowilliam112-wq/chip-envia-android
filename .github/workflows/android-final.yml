@@ -1,0 +1,42 @@
+name: Chip Envía Android build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Unpack source
+        run: unzip -q chip-envia-source-v2.zip
+      - name: Generate Gradle wrapper
+        working-directory: ChipEnvía
+        run: gradle wrapper --gradle-version 8.11.1
+      - name: Build APK
+        working-directory: ChipEnvía
+        run: ./gradlew --no-daemon --stacktrace --console=plain assembleDebug
+      - name: Check APK
+        run: test -s ChipEnvía/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chip-envia-debug-apk
+          path: ChipEnvía/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
